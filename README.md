@@ -12,6 +12,16 @@ Basically, this repository allows you to produce results like the following, whe
   <img src="./comparison_baseline_actuation.gif">
 </p>
 
+## Update: training in parallel
+
+We are working on parallelization of the DRL algorithm through the use of several environments. See our preprint here:
+
+https://arxiv.org/pdf/1906.10382.pdf
+
+and the repository with the parallel learning code here:
+
+https://github.com/jerabaul29/Cylinder2DFlowControlDRLParallel
+
 ## What is in the repo ?
 
 The code is in the **Cylinder2DFlowControlWithRL** subfolder. Inside it, you will find :
@@ -60,6 +70,10 @@ Note that, in the first article (and the JFM article), we adopt a renormalizatio
 
 ## First steps
 
+I present two methods here: install everything by hand in the right versions, or use a singularity container for virtualization and reproducibility. The singularity container is the recommended solution, that has been tested at many institutions and reproducibility has been confirmed and validated. Several users who tried to install things by hand contacted me because they had problem to reproduce the software stack: this is **not** the recommended solution and I will not help with debugging problems you encounter in this case.
+
+### Installing by hand (discouraged)
+
 Before launching any script, check that you have installed (tested on Ubuntu 16.04) :
 - Tensorflow (tested with tensorflow 1.8.0)
 - TensorForce (tested with tensorforce 0.4.2, commit from the tensorforce repo: 5f770fd)
@@ -68,9 +82,18 @@ Before launching any script, check that you have installed (tested on Ubuntu 16.
 
 For this, you can either install these modules on your computer yourself (respecting the version / commit, otherwise some things *may* break), or use the singularity image we provide (recommended). Some of the steps below assume that you are working on a Linux machine, but you can adapt to a windows / Mac.
 
+### Using through our container (recommended)
+
 If you want to use our singularity container (recommended, credits to Terje Kvernes, UiO / IT of the Department of Mathematics for setting up this infrastructure):
 - Download and install singularity (see for example the tutorial here http://www.sdsc.edu/support/user_guides/tutorials/singularity.html , or the singularity documentation).
-- Download our singularity container, available here: https://folk.uio.no/jeanra/Informatics/fenics-and-more.img . Carefull, this is a full Linux image and weights a bit over 5GB.
+- Download our singularity container parts from the repo, available in the ```container``` folder of hte present repo: https://github.com/jerabaul29/Cylinder2DFlowControlDRL/tree/master/container . The previous solution that relied on the folk.uio.no personal websites has been end-of-lifed and discontinued.
+- The container was committed using git-lfs in several segments, to make sure that the size limit is not over-run. To put the segments from the container folder together:
+```
+> cat fenics-and-more.img_part.?? > fenics-and-more.img
+> sha256sum fenics-and-more.img
+e6e3c6b24d4edb93022d1156aba1a458367242d0ba1f249508bd2669f87ee4b8  fenics-and-more.img
+
+```
 - Download from their website ( http://gmsh.info/ ) and unpack Gmsh, **in the right version**.
 - Now you should be able to load your singularity container inside which you can work in command line as a normal UNIX and run our scripts (of course, you will nedd to adapt the SET_YOUR_PATH stuff to your local paths; note that the gmsh path can only be DOWNSTREAM of the root path for your home if you use the -H option):
 
@@ -193,8 +216,20 @@ Finally, **best_model** contains the save of the best neural network encountered
 
 # Notes
 
+## Confusing choices in the code
+
+- The code is for some *bad* legacy reasons written in a 'dimensional' form. All results in the JFM paper are by contrast non dimensional. This can be confusing. For a detailed discussion of the non-dimensionalization process, see the discussion on this issue: https://github.com/jerabaul29/Cylinder2DFlowControlDRL/issues/3 . Note that if you want to change the Reynolds number, you may need to adapt the renormalization coefficients: https://github.com/jerabaul29/Cylinder2DFlowControlDRL/issues/6 .
+
 ## Errata and problems in code
 
 - There is a small erratum in one of the dumping routine, that is not fixed because of backwards compatibility of some of our plotting routines. Namely, files of the kind *debug.csv* have columns in a different order than indicated by the header; the real order is [Name;Episode;Step;RecircArea;Drag;lift]).
 
-- There is a memory leak in the specific matplotlib version included in the docker... This means that, if you let your code run with plotting, the RAM of your computer will saturate after a while. To avoid this, only use matplotlib showing when you want to visually inspect training. When you want to perform 'heavy' training, disable plotting by setting the *plot* named argument to *False* in your *perform_learning.py*
+- There is a memory leak in the specific matplotlib version included in the container... This means that, if you let your code run with plotting, the RAM of your computer will saturate after a while. To avoid this, only use matplotlib showing when you want to visually inspect training. When you want to perform 'heavy' training, disable plotting by setting the *plot* named argument to *False* in your *perform_learning.py*
+
+## Typo in the paper
+
+- In the JFM paper
+
+  - Eqn. defining Q_ref (just after Eqn. 2.6, in the text): ```rho``` should not be needed in non-dimensional form. Anyways, ```rho``` is 1, so this makes not difference.
+
+  - Eqn. B3: there is a typo, this should be ```/R```, not ```/R^2```. This is purely a typo and is of course correctly implemented in the code (i.e., the code is correct).
